@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "1081847148909",
+    "project_id": "sport-compare",
+    "storage_bucket": "sport-compare.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1081847148909:android:076a3274ba895077e86a64",
+        "android_client_info": {
+          "package_name": "com.example.tfg_informatica"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1081847148909-cnfi0b79moj8s8os34ssnsjn9q5jqs8a.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.tfg_informatica",
+            "certificate_hash": "c920534fd2763cd899e6ed0069e1d340f1e8621f"
+          }
+        },
+        {
+          "client_id": "1081847148909-bi90olfqil33if0lkmrhitq4i333421q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDtnlVn1hg8ALduhMBhc2nnmkzXTheNFaA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1081847148909-bi90olfqil33if0lkmrhitq4i333421q.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1081847148909-6fkeo7vuopeqd87laagc49t9bngv0in1.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.tfgInformatica"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
