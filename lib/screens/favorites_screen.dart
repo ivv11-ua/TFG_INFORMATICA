@@ -1,8 +1,32 @@
 import 'package:flutter/material.dart';
-import '../data/favorites.dart';
+import '../models/product.dart';
+import '../services/favorites_service.dart';
 import 'product_detail_screen.dart';
 
-class FavoritesScreen extends StatelessWidget {
+class FavoritesScreen extends StatefulWidget {
+  @override
+  _FavoritesScreenState createState() => _FavoritesScreenState();
+}
+
+class _FavoritesScreenState extends State<FavoritesScreen> {
+  final FavoriteService favoriteService = FavoriteService();
+  List<Product> favoriteProducts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavorites();
+  }
+
+  Future<void> _loadFavorites() async {
+    final list = await favoriteService.loadFavorites();
+    setState(() => favoriteProducts = list);
+
+    favoriteService.favoritesStream().listen((list) {
+      setState(() => favoriteProducts = list);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -30,7 +54,6 @@ class FavoritesScreen extends StatelessWidget {
                   itemCount: favoriteProducts.length,
                   itemBuilder: (context, index) {
                     final product = favoriteProducts[index];
-
                     return GestureDetector(
                       onTap: () {
                         Navigator.push(

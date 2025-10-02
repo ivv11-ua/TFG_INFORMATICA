@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../data/sample_products.dart';
 import '../models/product.dart';
-import '../data/favorites.dart';
 import '../data/compare.dart';
 import 'product_detail_screen.dart';
+import '../services/favorites_service.dart';
+import 'package:tfg_informatica/screens/live_products_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -15,9 +16,34 @@ class _HomeScreenState extends State<HomeScreen> {
   String selectedCategory = 'Todos';
   final List<String> categories = ['Todos', 'Fútbol', 'Tenis', 'Running'];
 
+  final FavoriteService favoriteService = FavoriteService();
+  List<Product> favoriteProducts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavorites();
+  }
+
+  Future<void> _loadFavorites() async {
+    final list = await favoriteService.loadFavorites();
+    setState(() => favoriteProducts = list);
+
+    // Escuchar cambios en tiempo real
+    favoriteService.favoritesStream().listen((list) {
+      setState(() => favoriteProducts = list);
+    });
+  }
+
   Future<void> _refreshProducts() async {
     await Future.delayed(const Duration(milliseconds: 500));
     setState(() {}); // Refresca la UI
+  }
+
+  void _toggleFavorite(Product product) async {
+    final isFavorite = favoriteProducts.any((p) => p.id == product.id);
+    await favoriteService.toggleFavorite(product, isFavorite);
+    // La UI se actualiza por el stream
   }
 
   @override
@@ -44,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onRefresh: _refreshProducts,
             child: Column(
               children: [
-                // 🔝 Barra de app
+                // Barra de app
                 Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -59,8 +85,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
+ElevatedButton(
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => LiveProductsScreen()),
+    );
+  },
+  child: const Text("Ver productos en tiempo real"),
+),
 
-                // 🔍 Buscador
+                // Buscador
                 Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -93,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-                // 📂 Chips de categorías
+                // Chips de categorías
                 SizedBox(
                   height: 50,
                   child: ListView.separated(
@@ -127,14 +162,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 const SizedBox(height: 8),
 
-                // 📋 Lista de productos
+                // Lista de productos
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     itemCount: filteredProducts.length,
                     itemBuilder: (context, index) {
                       final product = filteredProducts[index];
-                      final isFavorite = favoriteProducts.contains(product);
+                      final isFavorite =
+                          favoriteProducts.any((p) => p.id == product.id);
                       final isComparing = compareProducts.contains(product);
 
                       return Card(
@@ -157,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              // ❤️ Favorito con animación
+                              // Favorito
                               AnimatedSwitcher(
                                 duration: const Duration(milliseconds: 300),
                                 child: IconButton(
@@ -169,17 +205,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                     color: isFavorite ? Colors.red : null,
                                   ),
                                   onPressed: () {
-                                    setState(() {
-                                      if (isFavorite) {
-                                        favoriteProducts.remove(product);
-                                      } else {
-                                        favoriteProducts.add(product);
-                                      }
-                                    });
+                                    _toggleFavorite(product);
                                   },
                                 ),
                               ),
-                              // 🔄 Comparar con badge
+                              // Comparar
                               Stack(
                                 children: [
                                   IconButton(

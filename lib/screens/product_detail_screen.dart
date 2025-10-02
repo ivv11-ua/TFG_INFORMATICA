@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
-import '../data/favorites.dart';
 import '../data/compare.dart';
+import '../services/favorites_service.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Product product;
@@ -13,10 +13,36 @@ class ProductDetailScreen extends StatefulWidget {
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
+  final FavoriteService favoriteService = FavoriteService();
+  List<Product> favoriteProducts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavorites();
+  }
+
+  void _loadFavorites() async {
+    // Carga inicial
+    final list = await favoriteService.loadFavorites();
+    setState(() => favoriteProducts = list);
+
+    // Escucha cambios en tiempo real
+    favoriteService.favoritesStream().listen((list) {
+      setState(() => favoriteProducts = list);
+    });
+  }
+
+  void _toggleFavorite(Product product) async {
+    final isFavorite = favoriteProducts.any((p) => p.id == product.id);
+    await favoriteService.toggleFavorite(product, isFavorite);
+    // La UI se actualizará automáticamente por el stream
+  }
+
   @override
   Widget build(BuildContext context) {
     final product = widget.product;
-    final isFavorite = favoriteProducts.contains(product);
+    final isFavorite = favoriteProducts.any((p) => p.id == product.id);
     final isCompared = compareProducts.contains(product);
 
     return Scaffold(
@@ -83,7 +109,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       const SizedBox(height: 8),
                       Text(
                         "Categoría: ${product.category}",
-                        style: const TextStyle(fontSize: 16, color: Colors.white70),
+                        style:
+                            const TextStyle(fontSize: 16, color: Colors.white70),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -96,7 +123,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       const SizedBox(height: 16),
                       Text(
                         product.description,
-                        style: const TextStyle(fontSize: 16, color: Colors.white70),
+                        style:
+                            const TextStyle(fontSize: 16, color: Colors.white70),
                       ),
                       const SizedBox(height: 24),
                       Row(
@@ -104,8 +132,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         children: [
                           Expanded(
                             child: ElevatedButton.icon(
-                              icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border),
-                              label: Text(isFavorite ? "Quitar Favorito" : "Añadir Favorito"),
+                              icon: Icon(isFavorite
+                                  ? Icons.favorite
+                                  : Icons.favorite_border),
+                              label: Text(
+                                  isFavorite ? "Quitar Favorito" : "Añadir Favorito"),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
@@ -113,23 +144,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 ),
                                 padding: const EdgeInsets.symmetric(vertical: 12),
                               ),
-                              onPressed: () {
-                                setState(() {
-                                  if (isFavorite) {
-                                    favoriteProducts.remove(product);
-                                  } else {
-                                    favoriteProducts.add(product);
-                                  }
-                                });
-                                Navigator.pop(context, true); // <-- AVISA a HomeScreen
-                              },
+                              onPressed: () => _toggleFavorite(product),
                             ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
                             child: ElevatedButton.icon(
-                              icon: Icon(isCompared ? Icons.check_box : Icons.check_box_outline_blank),
-                              label: Text(isCompared ? "En Comparador" : "Añadir Comparador"),
+                              icon: Icon(isCompared
+                                  ? Icons.check_box
+                                  : Icons.check_box_outline_blank),
+                              label: Text(isCompared
+                                  ? "En Comparador"
+                                  : "Añadir Comparador"),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
@@ -146,12 +172,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   } else {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
-                                        content: Text('Máximo 3 productos para comparar'),
-                                      ),
+                                          content: Text(
+                                              'Máximo 3 productos para comparar')),
                                     );
                                   }
                                 });
-                                Navigator.pop(context, true); // <-- AVISA a HomeScreen
                               },
                             ),
                           ),
