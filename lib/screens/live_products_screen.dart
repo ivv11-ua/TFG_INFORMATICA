@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/nike_api2.dart';
+import '../services/nike_api.dart';
+import '../models/product.dart'; // Modelo unificado
 
 class LiveProductsScreen extends StatefulWidget {
   const LiveProductsScreen({Key? key}) : super(key: key);
@@ -9,7 +10,7 @@ class LiveProductsScreen extends StatefulWidget {
 }
 
 class _LiveProductsScreenState extends State<LiveProductsScreen> {
-  final List<NikeProduct> _products = [];
+  final List<Product> _products = []; // solo dinámicos
   String? _nextToken;
   bool _loading = false;
   String? _error;
@@ -43,16 +44,19 @@ class _LiveProductsScreenState extends State<LiveProductsScreen> {
       _loading = true;
       _error = null;
     });
+
     try {
-      final res = await NikeApi.fetchProducts(
+      final fetchedProducts = await NikeApi.fetchProducts(
         categoriesFilter: _activeFilters.isEmpty ? null : _activeFilters,
-        saveRawToProject: saveRaw, // guarda JSON crudo la primera vez si saveRaw true
+        saveRawToProject: saveRaw,
         saveFiltered: false,
       );
+
       setState(() {
-        _products.clear();
-        _products.addAll(res.items);
-        _nextToken = res.nextToken;
+        _products
+          ..clear()
+          ..addAll(fetchedProducts); // solo productos dinámicos
+        _nextToken = null; // si quieres puedes manejar paginación
       });
     } catch (e) {
       setState(() {
@@ -67,18 +71,21 @@ class _LiveProductsScreenState extends State<LiveProductsScreen> {
 
   Future<void> _loadMore() async {
     if (_nextToken == null) return;
+
     setState(() {
       _loading = true;
       _error = null;
     });
+
     try {
-      final res = await NikeApi.fetchProducts(
+      final fetchedProducts = await NikeApi.fetchProducts(
         nextToken: _nextToken,
         categoriesFilter: _activeFilters.isEmpty ? null : _activeFilters,
       );
+
       setState(() {
-        _products.addAll(res.items);
-        _nextToken = res.nextToken;
+        _products.addAll(fetchedProducts);
+        _nextToken = null; // simplificado
       });
     } catch (e) {
       setState(() {
@@ -102,7 +109,6 @@ class _LiveProductsScreenState extends State<LiveProductsScreen> {
       } else {
         _activeFilters.add(name);
       }
-      // recargar (ten cuidado con el límite de requests: sólo llama cuando el usuario cambia filtro)
       _loadInitial(saveRaw: false);
     });
   }
@@ -110,9 +116,7 @@ class _LiveProductsScreenState extends State<LiveProductsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Live Nike Products'),
-      ),
+      appBar: AppBar(title: const Text('Live Nike Products')),
       body: Column(
         children: [
           Padding(
@@ -157,18 +161,8 @@ class _LiveProductsScreenState extends State<LiveProductsScreen> {
                         crossAxisSpacing: 8,
                         mainAxisSpacing: 8,
                       ),
-                      itemCount: _products.length + (_nextToken != null ? 1 : 0),
+                      itemCount: _products.length,
                       itemBuilder: (context, i) {
-                        if (i >= _products.length) {
-                          return Center(
-                            child: _loading
-                                ? const CircularProgressIndicator()
-                                : ElevatedButton(
-                                    onPressed: _loadMore,
-                                    child: const Text('Cargar más'),
-                                  ),
-                          );
-                        }
                         final p = _products[i];
                         return Card(
                           clipBehavior: Clip.hardEdge,
@@ -183,17 +177,28 @@ class _LiveProductsScreenState extends State<LiveProductsScreen> {
                                           p.imageUrl,
                                           fit: BoxFit.cover,
                                           width: double.infinity,
-                                          errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+                                          errorBuilder: (_, __, ___) =>
+                                              const Icon(Icons.broken_image),
                                         )
-                                      : const Center(child: Icon(Icons.image_not_supported)),
+                                      : const Center(
+                                          child: Icon(Icons.image_not_supported)),
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.all(8.0),
-                                  child: Text(p.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600)),
+                                  child: Text(
+                                    p.name,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontWeight: FontWeight.w600),
+                                  ),
                                 ),
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
-                                  child: Text(p.price, style: const TextStyle(color: Colors.green)),
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
+                                  child: Text(
+                                    '${p.price} €',
+                                    style: const TextStyle(color: Colors.green),
+                                  ),
                                 ),
                               ],
                             ),
@@ -205,10 +210,12 @@ class _LiveProductsScreenState extends State<LiveProductsScreen> {
           ),
         ],
       ),
-      floatingActionButton: _products.isEmpty && _loading ? null : FloatingActionButton(
-        onPressed: _onRefresh,
-        child: const Icon(Icons.refresh),
-      ),
+      floatingActionButton: _products.isEmpty && _loading
+          ? null
+          : FloatingActionButton(
+              onPressed: _onRefresh,
+              child: const Icon(Icons.refresh),
+            ),
     );
   }
 }

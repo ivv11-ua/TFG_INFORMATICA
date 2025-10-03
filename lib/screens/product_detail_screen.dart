@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // 👈 Para comprobar login
+import '../screens/login_rquired_screen.dart'; // 👈 Pantalla intermedia
 import '../models/product.dart';
-import '../data/compare.dart';
 import '../services/favorites_service.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -15,7 +16,8 @@ class ProductDetailScreen extends StatefulWidget {
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   final FavoriteService favoriteService = FavoriteService();
   List<Product> favoriteProducts = [];
-
+  List<Product> compareProducts = [];
+  
   @override
   void initState() {
     super.initState();
@@ -23,11 +25,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   void _loadFavorites() async {
-    // Carga inicial
     final list = await favoriteService.loadFavorites();
     setState(() => favoriteProducts = list);
 
-    // Escucha cambios en tiempo real
     favoriteService.favoritesStream().listen((list) {
       setState(() => favoriteProducts = list);
     });
@@ -36,7 +36,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   void _toggleFavorite(Product product) async {
     final isFavorite = favoriteProducts.any((p) => p.id == product.id);
     await favoriteService.toggleFavorite(product, isFavorite);
-    // La UI se actualizará automáticamente por el stream
+  }
+
+  /// 🔐 Verifica si el usuario está autenticado
+  bool _isLoggedIn() {
+    return FirebaseAuth.instance.currentUser != null;
+  }
+
+  void _requireLogin() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginRequiredScreen()),
+    );
   }
 
   @override
@@ -144,7 +155,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 ),
                                 padding: const EdgeInsets.symmetric(vertical: 12),
                               ),
-                              onPressed: () => _toggleFavorite(product),
+                              onPressed: () {
+                                if (!_isLoggedIn()) {
+                                  _requireLogin();
+                                  return;
+                                }
+                                _toggleFavorite(product);
+                              },
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -164,6 +181,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 padding: const EdgeInsets.symmetric(vertical: 12),
                               ),
                               onPressed: () {
+                                if (!_isLoggedIn()) {
+                                  _requireLogin();
+                                  return;
+                                }
                                 setState(() {
                                   if (isCompared) {
                                     compareProducts.remove(product);

@@ -72,6 +72,16 @@ flutter:
     - assets/balon_adidas.png
     - assets/raqueta_wilson.png
     - assets/running_nike.png
+    - assets/botas_adidas.png
+    - assets/botas_nike.png
+    - assets/1barcelona.png
+    - assets/2barcelona.png
+    - assets/1real_madrid.png
+    - assets/2real_madrid.png
+    - assets/raqueta_babolat.png
+    - assets/balon_puma.png
+    - assets/logo_sport.png
+    
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

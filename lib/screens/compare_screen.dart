@@ -1,8 +1,38 @@
 import 'package:flutter/material.dart';
-import '../data/compare.dart';
 import '../models/product.dart';
+import '../services/compare_service.dart';
 
-class CompareScreen extends StatelessWidget {
+class CompareScreen extends StatefulWidget {
+  @override
+  _CompareScreenState createState() => _CompareScreenState();
+}
+
+class _CompareScreenState extends State<CompareScreen> {
+  final CompareService compareService = CompareService();
+  List<Product> compareProducts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCompared();
+  }
+
+  Future<void> _loadCompared() async {
+    final list = await compareService.loadCompared();
+    setState(() => compareProducts = list);
+
+    compareService.comparedStream().listen((list) {
+      setState(() => compareProducts = list);
+    });
+  }
+
+  void _removeCompared(Product product) async {
+    await compareService.toggleCompared(product, true);
+    setState(() {
+      compareProducts.removeWhere((p) => p.id == product.id);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -15,100 +45,173 @@ class CompareScreen extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: compareProducts.isEmpty
-              ? const Center(
-                  child: Text(
-                    "No hay productos seleccionados para comparar",
+          child: Column(
+            children: [
+              // Título
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: const Text(
+                    "Comparar productos",
                     style: TextStyle(
-                        fontSize: 20,
-                        color: Colors.white70,
-                        fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
-                )
-              : SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-                  child: Row(
-                    children: compareProducts.map((product) {
-                      return Container(
-                        width: 250,
-                        margin: const EdgeInsets.symmetric(horizontal: 8),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Colors.white, Colors.white70],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 8,
-                              offset: Offset(0, 6),
+                ),
+              ),
+              Expanded(
+                child: compareProducts.isEmpty
+                    ? const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.shopping_cart_outlined,
+                              size: 100,
+                              color: Colors.white70,
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              "Todavía no hay productos para comparar",
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white70,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
                           ],
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: 150,
-                                height: 150,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: Colors.black26,
-                                      blurRadius: 6,
-                                      offset: Offset(0, 4),
+                      )
+                    : SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: compareProducts.map((product) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                              child: Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  Container(
+                                    width: 300,
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [Color(0xffe0f7fa), Color(0xffb2ebf2)],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(20),
+                                      boxShadow: const [
+                                        BoxShadow(
+                                          color: Colors.black26,
+                                          blurRadius: 12,
+                                          offset: Offset(0, 6),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                  image: DecorationImage(
-                                    image: AssetImage(product.imageUrl),
-                                    fit: BoxFit.cover,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        children: [
+                                          Container(
+                                            width: 200,
+                                            height: 200,
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(16),
+                                              boxShadow: const [
+                                                BoxShadow(
+                                                  color: Colors.black26,
+                                                  blurRadius: 6,
+                                                  offset: Offset(0, 4),
+                                                ),
+                                              ],
+                                              image: DecorationImage(
+                                                image: AssetImage(product.imageUrl),
+                                                fit: BoxFit.cover,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Text(
+                                            product.name,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 18,
+                                              color: Colors.black87,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            "Categoría: ${product.category}",
+                                            style: const TextStyle(
+                                              color: Colors.black54,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            "Precio: ${product.price} €",
+                                            style: const TextStyle(
+                                              color: Colors.black,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            product.description,
+                                            style: const TextStyle(
+                                              color: Colors.black54,
+                                              fontSize: 13,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  // Botón eliminar negro, fuera de la imagen, arriba derecha
+                                  Positioned(
+                                    top: -10,
+                                    right: -10,
+                                    child: GestureDetector(
+                                      onTap: () => _removeCompared(product),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: Colors.white,
+                                          boxShadow: const [
+                                            BoxShadow(
+                                              color: Colors.black26,
+                                              blurRadius: 4,
+                                              offset: Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: const Padding(
+                                          padding: EdgeInsets.all(8.0),
+                                          child: Icon(
+                                            Icons.close,
+                                            color: Colors.black,
+                                            size: 22,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 12),
-                              Text(
-                                product.name,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                    color: Colors.black87),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                "Categoría: ${product.category}",
-                                style: const TextStyle(
-                                    color: Colors.black54, fontSize: 14),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                "Precio: ${product.price} €",
-                                style: const TextStyle(
-                                    color: Colors.green,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                product.description,
-                                style: const TextStyle(
-                                    color: Colors.black54, fontSize: 13),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
+                            );
+                          }).toList(),
                         ),
-                      );
-                    }).toList(),
-                  ),
-                ),
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );

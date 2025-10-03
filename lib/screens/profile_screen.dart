@@ -1,7 +1,10 @@
-// profile_screen.dart
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tfg_informatica/services/profile_service.dart';
-import 'dart:io';
+import 'package:tfg_informatica/screens/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   @override
@@ -9,11 +12,133 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  String nombre = "Juan Pérez";
-  String email = "juan.perez@email.com";
-  String telefono = "+34 123 456 789";
-  String direccion = "Calle Falsa 123, Ciudad, País";
-  File? imagenPerfil;
+  String nombre = "Bienvenido usuario!";
+  String email = "";
+  String telefono = "";
+  String direccion = "";
+  Uint8List? _imagenBytes;
+  bool _isLoggedIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      setState(() {
+        _isLoggedIn = false;
+        nombre = "Bienvenido usuario!";
+        email = "";
+        telefono = "";
+        direccion = "";
+        _imagenBytes = null;
+      });
+      return;
+    }
+
+    final doc = await FirebaseFirestore.instance.collection("users").doc(user.uid).get();
+    if (doc.exists) {
+      final data = doc.data()!;
+      Uint8List? imagenBytes;
+      if (data["imageBase64"] != null) {
+        imagenBytes = base64Decode(data["imageBase64"]);
+      }
+
+      setState(() {
+        _isLoggedIn = true;
+        nombre = data["name"] != null && data["name"].toString().isNotEmpty
+            ? "Bienvenido ${data["name"]}!"
+            : "Bienvenido usuario!";
+        email = data["email"] ?? user.email ?? "";
+        telefono = data["phone"] ?? "";
+        direccion = data["address"] ?? "";
+        _imagenBytes = imagenBytes;
+      });
+    } else {
+      setState(() {
+        _isLoggedIn = true;
+        nombre = "Bienvenido usuario!";
+        email = user.email ?? "";
+      });
+    }
+  }
+
+  Future<void> _editarPerfil() async {
+    if (!_isLoggedIn) return;
+
+    final nameController = TextEditingController(text: nombre.replaceFirst("Bienvenido ", "").replaceAll("!", ""));
+    final phoneController = TextEditingController(text: telefono);
+    final addressController = TextEditingController(text: direccion);
+
+    final resultado = await showModalBottomSheet<EditProfileResult>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 16,
+            right: 16,
+            top: 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text("Editar Perfil",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                    labelText: "Nombre", border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: phoneController,
+                decoration: const InputDecoration(
+                    labelText: "Teléfono", border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: addressController,
+                decoration: const InputDecoration(
+                    labelText: "Dirección", border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop(EditProfileResult(
+                    nameController.text,
+                    phoneController.text,
+                    addressController.text,
+                    null,
+                  ));
+                },
+                child: const Text("Guardar cambios"),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (resultado != null) {
+      await ProfileService.saveProfile(resultado);
+      setState(() {
+        nombre = "Bienvenido ${resultado.nombre}!";
+        telefono = resultado.telefono;
+        direccion = resultado.direccion;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,30 +154,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: CustomScrollView(
           slivers: [
             SliverAppBar(
-              expandedHeight: 350, //ESTO TIRA LA FOTO PARA ABAJO
+              expandedHeight: 350,
               pinned: true,
               backgroundColor: Colors.transparent,
               automaticallyImplyLeading: false,
-              title: const Text(
-                "Mi Perfil",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
+              title: const Text("Mi Perfil",
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20)),
               actions: [
                 Padding(
                   padding: const EdgeInsets.only(right: 16.0),
-                  child: ElevatedButton.icon(
-                    onPressed: () => ProfileService.logout(context),
-                    icon: const Icon(Icons.logout),
-                    label: const Text("Cerrar sesión"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      elevation: 5,
-                      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8), // mucho más pequeño
-
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                    ),
-                  ),
+                  child: _isLoggedIn
+                      ? ElevatedButton.icon(
+                          onPressed: () => ProfileService.logout(context),
+                          icon: const Icon(Icons.logout),
+                          label: const Text("Cerrar sesión"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            elevation: 5,
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 4, horizontal: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        )
+                      : ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const LoginScreen()),
+                            );
+                          },
+                          icon: const Icon(Icons.login),
+                          label: const Text("Iniciar sesión"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            elevation: 5,
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 4, horizontal: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
                 ),
               ],
               flexibleSpace: FlexibleSpaceBar(
@@ -76,58 +224,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            GestureDetector(
-                              onTap: () async {
-                                final nuevaFoto =
-                                    await ProfileService.seleccionarFoto();
-                                if (nuevaFoto != null) {
-                                  setState(() {
-                                    imagenPerfil = nuevaFoto;
-                                  });
-                                }
-                              },
-                              child: CircleAvatar(
-                                radius: 80,
-                                backgroundColor: Colors.white,
-                                backgroundImage: imagenPerfil != null
-                                    ? FileImage(imagenPerfil!)
-                                    : null,
-                                child: imagenPerfil == null
-                                    ? Text(
-                                        nombre.substring(0, 1),
-                                        style: const TextStyle(
-                                            fontSize: 40,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.deepPurple),
-                                      )
-                                    : null,
-                              ),
+                            CircleAvatar(
+                              radius: 80,
+                              backgroundColor: Colors.white,
+                              backgroundImage: _imagenBytes != null
+                                  ? MemoryImage(_imagenBytes!)
+                                  : null,
+                              child: (_imagenBytes == null)
+                                  ? Text(
+                                      nombre.isNotEmpty
+                                          ? nombre.substring(10, 11)
+                                          : "?",
+                                      style: const TextStyle(
+                                        fontSize: 40,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.deepPurple,
+                                      ),
+                                    )
+                                  : null,
                             ),
                             const SizedBox(height: 10),
-                            Text(
-                              nombre,
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold),
-                            ),
+                            Text(nombre,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold)),
                             const SizedBox(height: 5),
-                            Text(
-                              email,
-                              style: const TextStyle(
-                                  color: Colors.white70, fontSize: 14),
-                            ),
-                            const SizedBox(height: 5),
-                            Text(
-                              telefono,
-                              style: const TextStyle(
-                                  color: Colors.white70, fontSize: 14),
-                            ),
-                            Text(
-                              direccion,
-                              style: const TextStyle(
-                                  color: Colors.white70, fontSize: 14),
-                            ),
+                            if (_isLoggedIn) ...[
+                              Text(email,
+                                  style: const TextStyle(
+                                      color: Colors.white70, fontSize: 14)),
+                              const SizedBox(height: 5),
+                              Text(telefono,
+                                  style: const TextStyle(
+                                      color: Colors.white70, fontSize: 14)),
+                              Text(direccion,
+                                  style: const TextStyle(
+                                      color: Colors.white70, fontSize: 14)),
+                            ]
                           ],
                         ),
                       ),
@@ -136,54 +270,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
-            SliverToBoxAdapter(
-              child: Column(
-                children: [
-                  const SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      final resultado = await ProfileService.editarPerfilCompleto(
-                          context, nombre, telefono, direccion, imagenPerfil);
-                      if (resultado != null) {
-                        setState(() {
-                          nombre = resultado.nombre;
-                          telefono = resultado.telefono;
-                          direccion = resultado.direccion;
-                          if (resultado.imagen != null) {
-                            imagenPerfil = resultado.imagen;
-                          }
-                        });
-                      }
-                    },
-                    icon: const Icon(Icons.edit),
-                    label: const Text("Editar Perfil"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.deepPurple,
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 15, horizontal: 20),
-                      textStyle: const TextStyle(fontSize: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+            if (_isLoggedIn)
+              SliverToBoxAdapter(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 20),
+                    ElevatedButton.icon(
+                      onPressed: _editarPerfil,
+                      icon: const Icon(Icons.edit),
+                      label: const Text("Editar Perfil"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.deepPurple,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 15, horizontal: 20),
+                        textStyle: const TextStyle(fontSize: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 30),
-                ],
+                    const SizedBox(height: 30),
+                  ],
+                ),
               ),
-            ),
           ],
         ),
       ),
     );
   }
-}
-
-// Clase auxiliar para devolver resultado de edición
-class EditProfileResult {
-  final String nombre;
-  final String telefono;
-  final String direccion;
-  final File? imagen;
-  EditProfileResult(this.nombre, this.telefono, this.direccion, this.imagen);
 }
