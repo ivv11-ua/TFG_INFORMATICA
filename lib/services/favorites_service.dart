@@ -6,48 +6,136 @@ class FavoriteService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   /// Devuelve el UID del usuario actual
-  String _userId() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      throw Exception('Usuario no autenticado');
+  String? get _userId => FirebaseAuth.instance.currentUser?.uid;
+
+  /// 👇 AGREGAR: Stream de favoritos
+  Stream<List<Product>> favoritesStream() {
+    if (_userId == null) return Stream.value([]);
+
+    return _firestore
+        .collection('users')
+        .doc(_userId)
+        .collection('favorites')
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return Product(
+          id: data['id'] ?? doc.id,
+          name: data['name'] ?? 'Sin nombre',
+          category: data['category'] ?? 'General',
+          description: data['description'] ?? '',
+          price: (data['price'] ?? 0).toDouble(),
+          imageUrl: data['imageUrl'] ?? '',
+          productUrl: data['productUrl'],
+          raw: data['raw'],
+        );
+      }).toList();
+    });
+  }
+
+  /// Agregar/Quitar favorito (toggle)
+  Future<void> toggleFavorite(Product product, bool isFavorite) async {
+    if (_userId == null) return;
+
+    final docRef = _firestore
+        .collection('users')
+        .doc(_userId)
+        .collection('favorites')
+        .doc(product.id);
+
+    if (isFavorite) {
+      // Eliminar de favoritos
+      await docRef.delete();
+    } else {
+      // Agregar a favoritos
+      await docRef.set({
+        'id': product.id,
+        'name': product.name,
+        'category': product.category,
+        'description': product.description,
+        'price': product.price,
+        'imageUrl': product.imageUrl,
+        'productUrl': product.productUrl,
+        'timestamp': FieldValue.serverTimestamp(),
+        'raw': product.raw,
+      });
     }
-    return user.uid;
   }
 
-  /// Referencia a la colección de favoritos del usuario
-  CollectionReference<Map<String, dynamic>> get _favorites {
-    return _firestore.collection('users').doc(_userId()).collection('favorites');
-  }
-
-  /// Cargar favoritos actuales
+  /// Cargar todos los favoritos
   Future<List<Product>> loadFavorites() async {
+    if (_userId == null) return [];
+
     try {
-      final snapshot = await _favorites.get();
-      return snapshot.docs.map((doc) => Product.fromMap(doc.data())).toList();
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(_userId)
+          .collection('favorites')
+          .orderBy('timestamp', descending: true)
+          .get();
+
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return Product(
+          id: data['id'] ?? doc.id,
+          name: data['name'] ?? 'Sin nombre',
+          category: data['category'] ?? 'General',
+          description: data['description'] ?? '',
+          price: (data['price'] ?? 0).toDouble(),
+          imageUrl: data['imageUrl'] ?? '',
+          productUrl: data['productUrl'],
+          raw: data['raw'],
+        );
+      }).toList();
     } catch (e) {
       print('Error cargando favoritos: $e');
       return [];
     }
   }
 
-  /// Stream para escuchar cambios en tiempo real
-  Stream<List<Product>> favoritesStream() {
-    return _favorites.snapshots().map(
-      (snapshot) => snapshot.docs.map((doc) => Product.fromMap(doc.data())).toList(),
-    );
+  /// Verificar si un producto es favorito
+  Future<bool> isFavorite(String productId) async {
+    if (_userId == null) return false;
+
+    final doc = await _firestore
+        .collection('users')
+        .doc(_userId)
+        .collection('favorites')
+        .doc(productId)
+        .get();
+
+    return doc.exists;
   }
 
-  /// Añadir o eliminar favorito
-  Future<void> toggleFavorite(Product product, bool isFavorite) async {
-    try {
-      final docRef = _favorites.doc(product.id);
-      if (isFavorite) {
-        await docRef.delete();
-      } else {
-        await docRef.set(product.toMap());
-      }
-    } catch (e) {
-      print('Error toggling favorite: $e');
-    }
+  /// Agregar favorito directamente
+  Future<void> addFavorite(String userId, Product product) async {
+    await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('favorites')
+        .doc(product.id)
+        .set({
+      'id': product.id,
+      'name': product.name,
+      'category': product.category,
+      'description': product.description,
+      'price': product.price,
+      'imageUrl': product.imageUrl,
+      'productUrl': product.productUrl,
+      'timestamp': FieldValue.serverTimestamp(),
+      'raw': product.raw,
+    });
+  }
+
+  /// Eliminar favorito directamente
+  Future<void> removeFavorite(String userId, String productId) async {
+    await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('favorites')
+        .doc(productId)
+        .delete();
   }
 }

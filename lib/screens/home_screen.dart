@@ -8,6 +8,7 @@ import 'product_detail_screen.dart';
 import '../services/favorites_service.dart';
 import '../services/compare_service.dart';
 import '../screens/login_rquired_screen.dart';
+import '../screens/products_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -149,6 +150,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   },
                   child: const Text("Ver productos en tiempo real"),
+                ),
+
+                // Botón productos en tiempo real
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => ProductsScreen()),
+                    );
+                  },
+                  child: const Text("Ver apii google"),
                 ),
 
                 // Buscador

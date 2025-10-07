@@ -33,6 +33,52 @@ class _CompareScreenState extends State<CompareScreen> {
     });
   }
 
+  Widget _buildProductCard(Product product) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 5,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 👇 CAMBIAR Image.asset() por Image.network()
+          Expanded(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              child: product.imageUrl.isNotEmpty
+                  ? Image.network(  // 👈 CAMBIO AQUÍ
+                      product.imageUrl,
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: 60,
+                          height: 60,
+                          color: Colors.grey[300],
+                          child: const Icon(
+                            Icons.image_not_supported,
+                            size: 30,
+                            color: Colors.grey,
+                          ),
+                        );
+                      },
+                    )
+                  : Container(
+                      color: Colors.grey[300],
+                      child: const Icon(
+                        Icons.image_not_supported,
+                        size: 50,
+                        color: Colors.grey,
+                      ),
+                    ),
+            ),
+          ),
+          // ...resto del código...
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -128,11 +174,20 @@ class _CompareScreenState extends State<CompareScreen> {
                                                   offset: Offset(0, 4),
                                                 ),
                                               ],
-                                              image: DecorationImage(
-                                                image: AssetImage(product.imageUrl),
-                                                fit: BoxFit.cover,
-                                              ),
+                                              image: product.imageUrl.isNotEmpty
+                                                  ? DecorationImage(
+                                                      image: NetworkImage(product.imageUrl),  // 👈 CAMBIO AQUÍ (antes era AssetImage)
+                                                      fit: BoxFit.cover,
+                                                    )
+                                                  : null,
                                             ),
+                                            child: product.imageUrl.isEmpty
+                                                ? const Icon(
+                                                    Icons.image_not_supported,
+                                                    size: 80,
+                                                    color: Colors.grey,
+                                                  )
+                                                : null,
                                           ),
                                           const SizedBox(height: 12),
                                           Text(

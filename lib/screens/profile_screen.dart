@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -16,6 +17,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String email = "";
   String telefono = "";
   String direccion = "";
+  File? imagenPerfil;
   Uint8List? _imagenBytes;
   bool _isLoggedIn = false;
 
@@ -35,11 +37,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         telefono = "";
         direccion = "";
         _imagenBytes = null;
+        imagenPerfil = null;
       });
       return;
     }
 
-    final doc = await FirebaseFirestore.instance.collection("users").doc(user.uid).get();
+    final doc =
+        await FirebaseFirestore.instance.collection("users").doc(user.uid).get();
     if (doc.exists) {
       final data = doc.data()!;
       Uint8List? imagenBytes;
@@ -67,11 +71,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _editarPerfil() async {
-    if (!_isLoggedIn) return;
-
-    final nameController = TextEditingController(text: nombre.replaceFirst("Bienvenido ", "").replaceAll("!", ""));
+    if (!_isLoggedIn) return; // si no está logueado, no edita
+    final nameController = TextEditingController(
+        text: nombre.replaceFirst("Bienvenido ", ""));
     final phoneController = TextEditingController(text: telefono);
     final addressController = TextEditingController(text: direccion);
+    File? newImage = imagenPerfil;
 
     final resultado = await showModalBottomSheet<EditProfileResult>(
       context: context,
@@ -81,51 +86,76 @@ class _ProfileScreenState extends State<ProfileScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 16,
-            right: 16,
-            top: 16,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text("Editar Perfil",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                    labelText: "Nombre", border: OutlineInputBorder()),
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 16,
+                right: 16,
+                top: 16,
               ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: phoneController,
-                decoration: const InputDecoration(
-                    labelText: "Teléfono", border: OutlineInputBorder()),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text("Editar Perfil",
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 16),
+                  GestureDetector(
+                    onTap: () async {
+                      final picked = await ProfileService.seleccionarFoto();
+                      if (picked != null) {
+                        setModalState(() {
+                          newImage = picked;
+                        });
+                      }
+                    },
+                    child: CircleAvatar(
+                      radius: 40,
+                      backgroundColor: Colors.grey[300],
+                      backgroundImage:
+                          newImage != null ? FileImage(newImage!) : null,
+                      child: newImage == null
+                          ? const Icon(Icons.camera_alt, color: Colors.grey)
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                        labelText: "Nombre", border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: phoneController,
+                    decoration: const InputDecoration(
+                        labelText: "Teléfono", border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: addressController,
+                    decoration: const InputDecoration(
+                        labelText: "Dirección", border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(EditProfileResult(
+                        nameController.text,
+                        phoneController.text,
+                        addressController.text,
+                        newImage,
+                      ));
+                    },
+                    child: const Text("Guardar cambios"),
+                  ),
+                  const SizedBox(height: 16),
+                ],
               ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: addressController,
-                decoration: const InputDecoration(
-                    labelText: "Dirección", border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop(EditProfileResult(
-                    nameController.text,
-                    phoneController.text,
-                    addressController.text,
-                    null,
-                  ));
-                },
-                child: const Text("Guardar cambios"),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -136,6 +166,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         nombre = "Bienvenido ${resultado.nombre}!";
         telefono = resultado.telefono;
         direccion = resultado.direccion;
+        if (resultado.imagen != null) {
+          imagenPerfil = resultado.imagen;
+          _imagenBytes = null;
+        }
       });
     }
   }
@@ -229,8 +263,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               backgroundColor: Colors.white,
                               backgroundImage: _imagenBytes != null
                                   ? MemoryImage(_imagenBytes!)
-                                  : null,
-                              child: (_imagenBytes == null)
+                                  : (imagenPerfil != null
+                                      ? FileImage(imagenPerfil!)
+                                      : null),
+                              child: (_imagenBytes == null &&
+                                      imagenPerfil == null)
                                   ? Text(
                                       nombre.isNotEmpty
                                           ? nombre.substring(10, 11)

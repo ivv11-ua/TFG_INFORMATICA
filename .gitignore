@@ -1,45 +1,195 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+# ========== ARCHIVOS SENSIBLES ==========
+.env
+*.env
+.env.local
+.env.production
+*.key
+*.pem
+*secrets*.dart
 
-# IntelliJ related
+# ========== FLUTTER & DART ==========
+# Directorios de compilación
+**/build/
+**/android/build/
+**/ios/build/
+**/windows/build/
+**/linux/build/
+**/macos/build/
+**/web/build/
+
+# Flutter/Dart cache
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+*.g.dart
+*.freezed.dart
+
+# ========== ANDROID ==========
+**/android/**/gradle-wrapper.jar
+**/android/.gradle
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+**/android/key.properties
+*.jks
+*.keystore
+
+# Android ADB keys (IMPORTANTE - son privadas!)
+**/.android/adbkey
+**/.android/adbkey.pub
+.android/
+
+# ========== iOS ==========
+**/ios/**/*.mode1v3
+**/ios/**/*.mode2v3
+**/ios/**/*.moved-aside
+**/ios/**/*.pbxuser
+**/ios/**/*.perspectivev3
+**/ios/**/*sync/
+**/ios/**/.sconsign.dblite
+**/ios/**/.tags*
+**/ios/**/.vagrant/
+**/ios/**/DerivedData/
+**/ios/**/Icon?
+**/ios/**/Pods/
+**/ios/**/.symlinks/
+**/ios/**/profile
+**/ios/**/xcuserdata
+**/ios/.generated/
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+# ========== WINDOWS ==========
+**/windows/flutter/generated_plugin_registrant.cc
+**/windows/flutter/generated_plugin_registrant.h
+**/windows/flutter/generated_plugins.cmake
+
+# ========== MACOS ==========
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+**/macos/Flutter/Flutter-Debug.xcconfig
+**/macos/Flutter/Flutter-Release.xcconfig
+**/macos/Flutter/Flutter-Profile.xcconfig
+
+# ========== WEB ==========
+**/web/flutter_service_worker.js
+**/web/manifest.json
+**/web/version.json
+
+# ========== LINUX ==========
+**/linux/flutter/generated_plugin_registrant.cc
+**/linux/flutter/generated_plugin_registrant.h
+**/linux/flutter/generated_plugins.cmake
+
+# ========== IDE / EDITORES ==========
+# VS Code
+.vscode/
+*.code-workspace
+
+# Android Studio / IntelliJ
+.idea/
 *.iml
 *.ipr
 *.iws
-.idea/
+.idea_modules/
+atlassian-ide-plugin.xml
+com_crashlytics_export_strings.xml
+crashlytics.properties
+crashlytics-build.properties
+fabric.properties
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# Eclipse
+.metadata
+.settings/
+.project
+.classpath
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-/coverage/
+# ========== ARCHIVOS DEL SISTEMA ==========
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
 
-# Symbolication related
-app.*.symbols
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
 
-# Obfuscation related
-app.*.map.json
+# Linux
+*~
+.directory
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# ========== LOGS Y TEMPORALES ==========
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*~.nib
+local.properties
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# ========== DATOS DE TU APP ==========
+# JSON generados por las APIs
+nike_products_*.json
+google_shopping_*.json
+*_raw_*.json
+*_products_*.json
+resultados_*.json
+
+# Base de datos local
+*.db
+*.sqlite
+*.sqlite3
+
+# Archivos de caché
+*.cache
+cache/
+.tmp/
+
+# ========== COVERAGE & TESTING ==========
+coverage/
+*.coverage
+.test_coverage/
+test/.test_coverage.dart
+
+# ========== OTROS ==========
+*.orig
+.gradletasknamecache
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+.gradletasknamecache
+*.hprof

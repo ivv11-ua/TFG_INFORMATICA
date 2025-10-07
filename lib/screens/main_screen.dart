@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'favorites_screen.dart';
 import 'compare_screen.dart';
-import 'profile_screen.dart'; // Importa la pantalla de perfil
+import 'profile_screen.dart';
+import '../screens/chatbot_screen.dart'; // 👈 tu pantalla del chatbot
 
 class MainScreen extends StatefulWidget {
   @override
@@ -16,7 +17,7 @@ class _MainScreenState extends State<MainScreen> {
     HomeScreen(),
     FavoritesScreen(),
     CompareScreen(),
-    ProfileScreen(), // Añadimos la pantalla de perfil
+    ProfileScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -29,15 +30,28 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _screens[_selectedIndex],
+
+      // 👇 Aquí metemos el botón flotante del chatbot
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => ChatbotScreen()), // 👈 tu widget del chatbot
+          );
+        },
+        backgroundColor: Colors.deepPurple,
+        child: const Icon(Icons.chat, color: Colors.white),
+      ),
+
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed, // Para más de 3 items
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
           BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Favoritos'),
           BottomNavigationBarItem(icon: Icon(Icons.compare), label: 'Comparador'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'), // Botón de perfil
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
         ],
       ),
     );

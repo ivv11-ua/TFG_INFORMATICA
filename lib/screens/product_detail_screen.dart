@@ -92,11 +92,51 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ),
                           ],
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Image.asset(
-                            product.imageUrl,
-                            fit: BoxFit.cover,
+                        child: Hero(
+                          tag: product.id,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: product.imageUrl.isNotEmpty
+                                ? Image.network(
+                                    product.imageUrl,
+                                    height: 300,
+                                    width: double.infinity,
+                                    fit: BoxFit.contain,  // 👈 CAMBIO AQUÍ (antes era cover)
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        height: 300,
+                                        color: Colors.grey[300],
+                                        child: const Icon(
+                                          Icons.image_not_supported,
+                                          size: 80,
+                                          color: Colors.grey,
+                                        ),
+                                      );
+                                    },
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Container(
+                                        height: 300,
+                                        child: Center(
+                                          child: CircularProgressIndicator(
+                                            value: loadingProgress.expectedTotalBytes != null
+                                                ? loadingProgress.cumulativeBytesLoaded /
+                                                    loadingProgress.expectedTotalBytes!
+                                                : null,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  )
+                                : Container(
+                                    height: 300,
+                                    color: Colors.grey[300],
+                                    child: const Icon(
+                                      Icons.image_not_supported,
+                                      size: 80,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
                           ),
                         ),
                       ),

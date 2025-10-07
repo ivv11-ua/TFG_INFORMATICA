@@ -6,7 +6,7 @@ import '../models/product.dart'; // Importa tu modelo unificado
 class NikeApi {
   static const _base = 'https://nike-api.p.rapidapi.com/get-mens-shoes';
   static const _host = 'nike-api.p.rapidapi.com';
-  static const _apiKey = 'kaka';
+  static const _apiKey = 'f51f23adeemsh052ad24f98e96b1p1df042jsnf505a1bba564';
   static const String projectFolder = r'c:\Users\ivanv\Desktop\tfg_informatica';
 
   /// Devuelve directamente una lista de Product

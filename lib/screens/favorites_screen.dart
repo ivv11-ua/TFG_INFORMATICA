@@ -55,6 +55,59 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     });
   }
 
+  Widget _buildProductCard(Product product) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 5,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 👇 CAMBIAR Image.asset() por Image.network()
+          Expanded(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              child: product.imageUrl.isNotEmpty
+                  ? Image.network(  // 👈 CAMBIO AQUÍ
+                      product.imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey[300],
+                          child: const Icon(
+                            Icons.image_not_supported,
+                            size: 50,
+                            color: Colors.grey,
+                          ),
+                        );
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        );
+                      },
+                    )
+                  : Container(
+                      color: Colors.grey[300],
+                      child: const Icon(
+                        Icons.image_not_supported,
+                        size: 50,
+                        color: Colors.grey,
+                      ),
+                    ),
+            ),
+          ),
+          // ...resto del código...
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -142,12 +195,35 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                 leading: ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
-                                  child: Image.asset(
-                                    product.imageUrl,
-                                    width: 60,
-                                    height: 60,
-                                    fit: BoxFit.cover,
-                                  ),
+                                  child: product.imageUrl.isNotEmpty
+                                      ? Image.network(  // 👈 CAMBIO AQUÍ (antes era Image.asset)
+                                          product.imageUrl,
+                                          width: 60,
+                                          height: 60,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Container(
+                                              width: 60,
+                                              height: 60,
+                                              color: Colors.grey[300],
+                                              child: const Icon(
+                                                Icons.image_not_supported,
+                                                size: 30,
+                                                color: Colors.grey,
+                                              ),
+                                            );
+                                          },
+                                        )
+                                      : Container(
+                                          width: 60,
+                                          height: 60,
+                                          color: Colors.grey[300],
+                                          child: const Icon(
+                                            Icons.image_not_supported,
+                                            size: 30,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
                                 ),
                                 title: Text(
                                   product.name,
