@@ -3,7 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:tfg_informatica/screens/main_screen.dart';
 import 'firebase_options.dart';
 import 'screens/login_screen.dart';
-import 'screens/home_screen.dart';
+import 'screens/products_screen_api_google.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/main_screen.dart';
 

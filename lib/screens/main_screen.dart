@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart';
+import 'products_screen_api_google.dart';
 import 'favorites_screen.dart';
 import 'compare_screen.dart';
 import 'profile_screen.dart';
@@ -14,7 +14,7 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
   final List<Widget> _screens = [
-    HomeScreen(),
+    ProductsScreen(),
     FavoritesScreen(),
     CompareScreen(),
     ProfileScreen(),

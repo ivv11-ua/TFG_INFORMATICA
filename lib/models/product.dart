@@ -113,10 +113,21 @@ class Product {
       }
     }
 
+    // Generar ID único combinando product_id + link
+    // Esto evita colisiones entre diferentes búsquedas
+    String uniqueId;
+    if (gs['product_id'] != null && gs['product_id'].toString().isNotEmpty) {
+      uniqueId = gs['product_id'].toString();
+    } else if (productUrl != null && productUrl.isNotEmpty) {
+      // Usar hash del URL como ID único
+      uniqueId = productUrl.hashCode.abs().toString();
+    } else {
+      // Fallback: timestamp + position
+      uniqueId = '${DateTime.now().millisecondsSinceEpoch}_${gs['position']}';
+    }
+
     return Product(
-      id: gs['position']?.toString() ?? 
-          gs['product_id']?.toString() ?? 
-          DateTime.now().millisecondsSinceEpoch.toString(),
+      id: uniqueId,
       name: gs['title'] ?? 'Sin título',
       category: category,
       description: gs['source'] ?? gs['snippet'] ?? '', // Nombre de la tienda
