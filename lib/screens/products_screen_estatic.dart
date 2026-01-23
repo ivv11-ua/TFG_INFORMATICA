@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tfg_informatica/screens/products_screen_api_nike.dart';
-import 'package:tfg_informatica/screens/login_rquired_screen.dart';
+import 'package:tfg_informatica/screens/login_required_screen.dart';
 import '../data/sample_products.dart';
 import '../models/product.dart';
 import 'product_detail_screen.dart';
 import '../services/favorites_service.dart';
 import '../services/compare_service.dart';
-import '../screens/login_rquired_screen.dart';
+import 'login_required_screen.dart';
 import '../screens/products_screen_api_google.dart';
 
 class HomeScreen extends StatefulWidget {

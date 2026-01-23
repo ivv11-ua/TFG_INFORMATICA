@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../services/nike_api.dart';
 import '../services/google_api.dart';
 import '../models/product.dart';
 import '../services/favorites_service.dart';
 import '../services/compare_service.dart';
+import '../screens/login_required_screen.dart';
+import '../screens/product_detail_screen.dart';
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({Key? key}) : super(key: key);
@@ -14,7 +15,7 @@ class ProductsScreen extends StatefulWidget {
   State<ProductsScreen> createState() => _ProductsScreenState();
 }
 
-class _ProductsScreenState extends State<ProductsScreen> {
+class _ProductsScreenState extends State<ProductsScreen> with AutomaticKeepAliveClientMixin {
   List<Product> _products = [];
   bool _isLoading = false;
   String _selectedSource = 'Ninguna';
@@ -29,6 +30,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   final FavoriteService _favoriteService = FavoriteService();
   final CompareService _compareService = CompareService();
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -74,34 +78,59 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
     try {
       final favorites = await _favoriteService.loadFavorites();
+      _favorites.clear();
       for (var product in favorites) {
         _favorites[product.id] = true;
       }
 
       final comparing = await _compareService.loadCompared();
+      _comparing.clear();
       for (var product in comparing) {
         _comparing[product.id] = true;
       }
 
       if (mounted) setState(() {});
+
+      // Escuchar cambios en tiempo real
+      _favoriteService.favoritesStream().listen((favoritesList) {
+        if (mounted) {
+          setState(() {
+            _favorites.clear();
+            for (var product in favoritesList) {
+              _favorites[product.id] = true;
+            }
+          });
+        }
+      });
+
+      _compareService.comparedStream().listen((compareList) {
+        if (mounted) {
+          setState(() {
+            _comparing.clear();
+            for (var product in compareList) {
+              _comparing[product.id] = true;
+            }
+          });
+        }
+      });
     } catch (e) {
       print('Error cargando favoritos/comparaciones: $e');
     }
   }
 
   Future<void> _toggleFavorite(Product product) async {
+    
+   
     final user = FirebaseAuth.instance.currentUser;
     
     if (user == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('⚠️ Debes iniciar sesión para usar favoritos'),
-            backgroundColor: Colors.orange,
-          ),
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => LoginRequiredScreen()),
         );
       }
-      return;
+      return;  
     }
 
     try {
@@ -138,14 +167,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
     
     if (user == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('⚠️ Debes iniciar sesión para comparar productos'),
-            backgroundColor: Colors.orange,
-          ),
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => LoginRequiredScreen()),
         );
       }
-      return;
+      return;  
     }
 
     try {
@@ -542,135 +569,140 @@ class _ProductsScreenState extends State<ProductsScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Cabecera
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Filtros',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    'Guardar',
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Cabecera
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Filtros',
                     style: TextStyle(
-                      color: Colors.deepPurpleAccent,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 20),
-            
-            // Ordenar por
-            const Text(
-              'Ordenar por',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                  TextButton(
+                    onPressed: () {
+                      setState(() {}); // Actualizar pantalla principal
+                      Navigator.pop(context);
+                    },
+                    child: const Text(
+                      'Guardar',
+                      style: TextStyle(
+                        color: Colors.deepPurpleAccent,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 12),
-            
-            RadioListTile<String>(
-              title: const Text('Relevancia: Mejor resultado'),
-              value: 'none',
-              groupValue: _sortOrder,
-              activeColor: Colors.deepPurpleAccent,
-              onChanged: (value) {
-                setState(() => _sortOrder = value!);
-              },
-            ),
-            RadioListTile<String>(
-              title: const Text('Precio: Menor a mayor'),
-              value: 'price_asc',
-              groupValue: _sortOrder,
-              activeColor: Colors.deepPurpleAccent,
-              onChanged: (value) {
-                setState(() => _sortOrder = value!);
-              },
-            ),
-            RadioListTile<String>(
-              title: const Text('Precio: Mayor a menor'),
-              value: 'price_desc',
-              groupValue: _sortOrder,
-              activeColor: Colors.deepPurpleAccent,
-              onChanged: (value) {
-                setState(() => _sortOrder = value!);
-              },
-            ),
-            
-            const Divider(height: 32),
-            
-            // Filtrar por precio
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Filtrar por precio',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+              
+              const SizedBox(height: 20),
+              
+              // Ordenar por
+              const Text(
+                'Ordenar por',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              RadioListTile<String>(
+                title: const Text('Relevancia: Mejor resultado'),
+                value: 'none',
+                groupValue: _sortOrder,
+                activeColor: Colors.deepPurpleAccent,
+                onChanged: (value) {
+                  setModalState(() => _sortOrder = value!);
+                },
+              ),
+              RadioListTile<String>(
+                title: const Text('Precio: Menor a mayor'),
+                value: 'price_asc',
+                groupValue: _sortOrder,
+                activeColor: Colors.deepPurpleAccent,
+                onChanged: (value) {
+                  setModalState(() => _sortOrder = value!);
+                },
+              ),
+              RadioListTile<String>(
+                title: const Text('Precio: Mayor a menor'),
+                value: 'price_desc',
+                groupValue: _sortOrder,
+                activeColor: Colors.deepPurpleAccent,
+                onChanged: (value) {
+                  setModalState(() => _sortOrder = value!);
+                },
+              ),
+              
+              const Divider(height: 32),
+              
+              // Filtrar por precio
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Filtrar por precio',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  Switch(
+                    value: _priceRange != 'all',
+                    activeColor: Colors.deepPurpleAccent,
+                    onChanged: (value) {
+                      setModalState(() {
+                        _priceRange = value ? '0-50' : 'all';
+                      });
+                    },
+                  ),
+                ],
+              ),
+              
+              if (_priceRange != 'all') ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey[300]!),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: DropdownButton<String>(
+                    value: _priceRange,
+                    isExpanded: true,
+                    underline: const SizedBox(),
+                    icon: const Icon(Icons.arrow_drop_down, color: Colors.deepPurpleAccent),
+                    items: const [
+                      DropdownMenuItem(value: '0-50', child: Text('0€ - 50€')),
+                      DropdownMenuItem(value: '50-100', child: Text('50€ - 100€')),
+                      DropdownMenuItem(value: '100-200', child: Text('100€ - 200€')),
+                      DropdownMenuItem(value: '200+', child: Text('200€ +')),
+                    ],
+                    onChanged: (value) {
+                      setModalState(() => _priceRange = value!);
+                    },
                   ),
                 ),
-                Switch(
-                  value: _priceRange != 'all',
-                  activeColor: Colors.deepPurpleAccent,
-                  onChanged: (value) {
-                    setState(() {
-                      _priceRange = value ? '0-50' : 'all';
-                    });
-                  },
-                ),
               ],
-            ),
-            
-            if (_priceRange != 'all') ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey[300]!),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: DropdownButton<String>(
-                  value: _priceRange,
-                  isExpanded: true,
-                  underline: const SizedBox(),
-                  icon: const Icon(Icons.arrow_drop_down, color: Colors.deepPurpleAccent),
-                  items: const [
-                    DropdownMenuItem(value: '0-50', child: Text('0€ - 50€')),
-                    DropdownMenuItem(value: '50-100', child: Text('50€ - 100€')),
-                    DropdownMenuItem(value: '100-200', child: Text('100€ - 200€')),
-                    DropdownMenuItem(value: '200+', child: Text('200€ +')),
-                  ],
-                  onChanged: (value) {
-                    setState(() => _priceRange = value!);
-                  },
-                ),
-              ),
+              
+              const SizedBox(height: 20),
             ],
-            
-            const SizedBox(height: 20),
-          ],
+          ),
         ),
       ),
     );
@@ -678,6 +710,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Mantener el estado
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -941,7 +974,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   Widget _buildProductCard(Product product, bool isFavorite, bool isComparing) {
     return GestureDetector(
-      onTap: () => _openProductUrl(product),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProductDetailScreen(product: product),
+          ),
+        );
+      },
       child: Card(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 5,

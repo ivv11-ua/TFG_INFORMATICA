@@ -29,10 +29,13 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_selectedIndex],
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _screens,
+      ),
 
       // 👇 Aquí metemos el botón flotante del chatbot
-      floatingActionButton: FloatingActionButton(
+      /*floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
             context,
@@ -41,7 +44,7 @@ class _MainScreenState extends State<MainScreen> {
         },
         backgroundColor: Colors.deepPurple,
         child: const Icon(Icons.chat, color: Colors.white),
-      ),
+      ),*/
 
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,

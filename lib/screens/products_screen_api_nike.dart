@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/nike_api.dart';
-import '../models/product.dart'; // Modelo unificado
+import '../models/product.dart';
+import '../screens/product_detail_screen.dart';
 
 class LiveProductsScreen extends StatefulWidget {
   const LiveProductsScreen({Key? key}) : super(key: key);
@@ -167,7 +168,14 @@ class _LiveProductsScreenState extends State<LiveProductsScreen> {
                         return Card(
                           clipBehavior: Clip.hardEdge,
                           child: InkWell(
-                            onTap: () => debugPrint('Open: ${p.productUrl}'),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ProductDetailScreen(product: p),
+                                ),
+                              );
+                            },
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [

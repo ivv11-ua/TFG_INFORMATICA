@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // 👈 Para comprobar login
-import '../screens/login_rquired_screen.dart'; // 👈 Pantalla intermedia
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../screens/login_required_screen.dart'; 
 import '../models/product.dart';
 import '../services/favorites_service.dart';
+import '../services/compare_service.dart';
+import '../services/google_api.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Product product;
@@ -15,27 +18,70 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   final FavoriteService favoriteService = FavoriteService();
+  final CompareService compareService = CompareService();
   List<Product> favoriteProducts = [];
   List<Product> compareProducts = [];
+  bool _isLoading = true;
   
   @override
   void initState() {
     super.initState();
-    _loadFavorites();
+    _loadData();
   }
 
-  void _loadFavorites() async {
+  Future<void> _loadData() async {
+    await Future.wait([
+      _loadFavorites(),
+      _loadCompared(),
+    ]);
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadFavorites() async {
     final list = await favoriteService.loadFavorites();
-    setState(() => favoriteProducts = list);
+    if (mounted) setState(() => favoriteProducts = list);
 
     favoriteService.favoritesStream().listen((list) {
-      setState(() => favoriteProducts = list);
+      if (mounted) {
+        setState(() => favoriteProducts = list);
+      }
+    });
+  }
+
+  Future<void> _loadCompared() async {
+    final list = await compareService.loadCompared();
+    if (mounted) setState(() => compareProducts = list);
+
+    compareService.comparedStream().listen((list) {
+      if (mounted) {
+        setState(() => compareProducts = list);
+      }
     });
   }
 
   void _toggleFavorite(Product product) async {
     final isFavorite = favoriteProducts.any((p) => p.id == product.id);
     await favoriteService.toggleFavorite(product, isFavorite);
+  }
+
+  void _toggleCompare(Product product) async {
+    final isCompared = compareProducts.any((p) => p.id == product.id);
+    
+    if (!isCompared && compareProducts.length >= 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Máximo 3 productos para comparar'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    
+    await compareService.toggleCompared(product, isCompared);
   }
 
   /// 🔐 Verifica si el usuario está autenticado
@@ -52,9 +98,26 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final product = widget.product;
+    final product = widget.product;    
+    if (_isLoading) {
+      return Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xff74ebd5), Color(0xffACB6E5)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: const Center(
+            child: CircularProgressIndicator(color: Colors.white),
+          ),
+        ),
+      );
+    }
+    
     final isFavorite = favoriteProducts.any((p) => p.id == product.id);
-    final isCompared = compareProducts.contains(product);
+    final isCompared = compareProducts.any((p) => p.id == product.id);
 
     return Scaffold(
       body: Container(
@@ -225,24 +288,84 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   _requireLogin();
                                   return;
                                 }
-                                setState(() {
-                                  if (isCompared) {
-                                    compareProducts.remove(product);
-                                  } else if (compareProducts.length < 3) {
-                                    compareProducts.add(product);
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                          content: Text(
-                                              'Máximo 3 productos para comparar')),
-                                    );
-                                  }
-                                });
+                                _toggleCompare(product);
                               },
                             ),
                           ),
                         ],
                       ),
+                      const SizedBox(height: 16),
+                      if (product.productUrl != null && product.productUrl!.isNotEmpty)
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.open_in_new),
+                            label: const Text('Ver en el sitio web'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.deepPurpleAccent,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            onPressed: () async {
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (context) => const Center(
+                                  child: CircularProgressIndicator(color: Colors.white),
+                                ),
+                              );
+
+                              try {
+                                final directLink = await GoogleShoppingApi.getDirectLink(product);
+                                
+                                if (mounted) Navigator.pop(context);
+
+                                if (directLink == null || directLink.isEmpty) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('⚠️ No se encontró enlace directo a la tienda'),
+                                        backgroundColor: Colors.orange,
+                                      ),
+                                    );
+                                  }
+                                  return;
+                                }
+
+                                final uri = Uri.parse(directLink);
+                                
+                                if (await canLaunchUrl(uri)) {
+                                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                } else {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('❌ No se pudo abrir el enlace'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              } catch (e) {
+                                if (mounted && Navigator.canPop(context)) {
+                                  Navigator.pop(context);
+                                }
+                                
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('❌ Error: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                          ),
+                        ),
                       const SizedBox(height: 40),
                     ],
                   ),

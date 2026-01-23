@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../services/compare_service.dart';
+import 'product_detail_screen.dart';
 
 class CompareScreen extends StatefulWidget {
   @override
@@ -141,9 +142,18 @@ class _CompareScreenState extends State<CompareScreen> {
                               child: Stack(
                                 clipBehavior: Clip.none,
                                 children: [
-                                  Container(
-                                    width: 300,
-                                    decoration: BoxDecoration(
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => ProductDetailScreen(product: product),
+                                        ),
+                                      );
+                                    },
+                                    child: Container(
+                                      width: 300,
+                                      decoration: BoxDecoration(
                                       gradient: const LinearGradient(
                                         colors: [Color(0xffe0f7fa), Color(0xffb2ebf2)],
                                         begin: Alignment.topLeft,
@@ -228,6 +238,7 @@ class _CompareScreenState extends State<CompareScreen> {
                                         ],
                                       ),
                                     ),
+                                  ),
                                   ),
                                   // Botón eliminar negro, fuera de la imagen, arriba derecha
                                   Positioned(

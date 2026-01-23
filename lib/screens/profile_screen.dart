@@ -268,11 +268,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       : null),
                               child: (_imagenBytes == null &&
                                       imagenPerfil == null)
-                                  ? Text(
-                                      nombre.isNotEmpty
-                                          ? nombre.substring(10, 11)
-                                          : "?",
-                                      style: const TextStyle(
+                                  ? const Text(
+                                      "!",
+                                      style: TextStyle(
                                         fontSize: 40,
                                         fontWeight: FontWeight.bold,
                                         color: Colors.deepPurple,
