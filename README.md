@@ -4,7 +4,7 @@
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
 * **Centralized Search:** Explore sports product catalogs from different brands and stores in real time.
 * **Product Comparator:** Side-by-side technical specs and price comparison for up to 3 products simultaneously.
@@ -16,7 +16,7 @@
 
 ---
 
-## 🛠️ Tech Stack & Technologies
+## Tech Stack & Technologies
 
 ### **Frontend**
 * **Framework:** [Flutter](https://flutter.dev/) (Language: Dart)[cite: 2]
@@ -33,7 +33,7 @@
 
 ---
 
-## 🏗️ Project Architecture
+## Project Architecture
 
 The project follows the principles of **Clean Architecture / MVVM**, organized within the `lib/` directory as follows[cite: 2]:
 
