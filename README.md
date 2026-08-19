@@ -47,7 +47,20 @@ Before running or building the project, ensure you have:
 
 ## Installation & Setup
 
-1. **Clone the repository:**
-   ```bash
-   git clone [https://github.com/your-username/sportly.git](https://github.com/your-username/sportly.git)
-   cd sportly
+# 1. Clone the repository and navigate into the project folder
+git clone https://github.com/your-username/sportly.git
+cd sportly
+
+# 2. Install dependencies
+flutter pub get
+
+# 3. Create environment variables file and add your API keys
+cp .env.example .env
+# SERPAPI_KEY=your_serpapi_key_here
+# RAPIDAPI_KEY=your_rapidapi_key_here
+
+# 4. Configure Firebase
+flutterfire configure
+
+# 5. Run the application
+flutter run
