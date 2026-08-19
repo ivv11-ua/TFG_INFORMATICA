@@ -44,23 +44,13 @@ Before running or building the project, ensure you have:
 * A configured project on [Google Firebase](https://firebase.google.com/)
 
 ---
-
 ## Installation & Setup
 
-# 1. Clone the repository and navigate into the project folder
-git clone https://github.com/your-username/sportly.git
-cd sportly
-
-# 2. Install dependencies
+1. **Clone the repository:** Download the project files to your local machine.
+   ```bash
+   git clone [https://github.com/your-username/sportly.git](https://github.com/your-username/sportly.git)
+   cd sportly
 flutter pub get
-
-# 3. Create environment variables file and add your API keys
 cp .env.example .env
-# SERPAPI_KEY=your_serpapi_key_here
-# RAPIDAPI_KEY=your_rapidapi_key_here
-
-# 4. Configure Firebase
 flutterfire configure
-
-# 5. Run the application
 flutter run
