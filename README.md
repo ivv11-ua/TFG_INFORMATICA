@@ -34,7 +34,7 @@
 
 
 
-## 📋 Prerequisites
+## Prerequisites
 
 Before running or building the project, ensure you have:
 
@@ -46,11 +46,19 @@ Before running or building the project, ensure you have:
 ---
 ## Installation & Setup
 
-1. **Clone the repository:** Download the project files to your local machine.
-   ```bash
-   git clone [https://github.com/your-username/sportly.git](https://github.com/your-username/sportly.git)
-   cd sportly
+```bash
+# 1. Clone the repository and enter the project folder
+git clone [https://github.com/your-username/sportly.git](https://github.com/your-username/sportly.git)
+cd sportly
+
+# 2. Install dependencies and Flutter packages
 flutter pub get
+
+# 3. Create the environment variables file for API keys
 cp .env.example .env
+
+# 4. Configure Firebase connection
 flutterfire configure
+
+# 5. Run the application on emulator or device
 flutter run
